@@ -5,8 +5,16 @@
   "description": "Core system for Capstone project",
   "main": "server.js",
   "scripts": {
+    "start": "set DEBUG=express: & nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Doan Hoang Long",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "pug": "^3.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
 }
