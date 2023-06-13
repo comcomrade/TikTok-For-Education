@@ -5,5 +5,5 @@ Mobile side:
 - React Native
 Backend:
 - Node.js
-- MongoDB
+- MongoDB  
 I will update the architecture soon after finishing researching and have an illustration on Draw.io
