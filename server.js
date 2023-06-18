@@ -1,91 +1,72 @@
 import http from 'node:http';
 import express from 'express';
 import fs from 'node:fs';
-
-/**
- * Files
- */
-
-import {getUserById} from './data/getUserById.js';
+import multer from 'multer';
+import path from 'path'
 /**
  * Initialize
  */
 const app = express();
 app.set('port', process.env.PORT || 4000);
 
-/**
- * Configure template engine for current application
- */
-app.set('view engine', 'pug'); // Set the engine for the view template
-app.set('views', './pug-views'); // Set the directory containing the view template files
+// Setting multer Storage Engine
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+            const now = new Date();
 
-/**
- * All Request must go through this middleware
- */
-app.use((req, res, next) => {
-    console.log(`Time: ${Date.now()}`);
-    next();
-})
+            const customizedDateTime = 
 
-
-/**
- * ALL
- */
-app.all('/secret', (req, res, next) => {
-    console.log('Accessing the secret path...');
-    next();
-})
-
-/**
- * GET
- */
-app.get('/', (req, res) => {
-    res.send('hello world!'); 
-})
-
-app.get('/pug', (req, res, next) => {
-    res.render('index', {title: 'Hey', message: 'Hello there!'})
-})
-
-app.get('/users/:userId/book/:bookId', (req, res) => {
-    res.send(req.params);
-})
-
-/**
- * POST/
- */
-app.post('/', (req, res) => {
-    // Do something here on the server
-    res.send('You have POST a request!');
-})
+            now.getFullYear() + // 1900 + getYear()
+            String(now.getMonth() + 1).padStart(2,'0') + // getMonth() returns 0-11
+            String(now.getDate()).padStart(2,'O') + // getDay() returns day of the week (0 for Sunday,...). while getDate() returns 1-31
+            '-' + 
+            String(now.getHours()) + // returns 0 - 23
+            String(now.getMinutes()) + // returns 0 - 59
+            String(now.getSeconds()); // returns 0 - 59
 
 
+            const uniqueSuffix = customizedDateTime + '-' + Math.round(Math.random() * 100)
 
-// Synchronous errors will automatically be catched by Express itself
-// Asynchronous errors need to be passed to next(err) function 
-app.get('/file-up', (req, res, next) => {
-    // Read file
-    fs.readFile('/file-does-not-exist', (err, data) => {
-        if(err) {
-            next(err)
-        } else {
-            res.send(data);
+            const extension = path.extname(file.originalname);
+
+            cb(null, file.fieldname + '-' + uniqueSuffix + extension) // 'file-yyyymmdd-hhmmss-23.jpg'
         }
-    })
+    }),
+    limits: {
+        fileSize: 4000 * 1000, //bytes => 4MB
+        foo: 4
+    }
+});
+
+
+// Serve static file
+app.use(express.static('public'));
+
+// Endpoints
+app.get('/upload', (req,res)=> {
+    res.sendFile(__dirname + '/public/index.html');
 })
 
-app.get('/user/:id', async (req, res, next) => {
-    // fetch the user by ID using getUserById function
-    const user = await getUserById(req.params.id);
-    res.send(user);
+app.post('/upload', upload.single('file'), (req, res, next) => {
+    // Store the file
+    if(req.file) {
+        console.log('File added to folder')
+        res.send('File has been successfully uploaded');
+    } else {
+        next();
+    }
 })
 
-// This error handling must be at last, after other app.use() and routes calls
+// Error catching
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Internal server error. Something broke!');
+    if (err instanceof multer.MulterError) {
+        res.status(400).send('Multer error: ' + err.message)
+    } else {
+        res.status(500).send('Internal server error');
+    }
 })
-
 
 app.listen(app.get('port'), (req, res) => {
     console.log(`Server  is running on port ${app.get('port')}`);
